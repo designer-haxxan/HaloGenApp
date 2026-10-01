@@ -192,6 +192,52 @@ textarea.form-control{resize:none}
 .clr::after{content:'';display:table;clear:both}
 .gap-2{gap:8px}
 .w-100{width:100%}
+/* ── LOGIN SCREEN ────────────────────────── */
+#screen-login{
+  position:fixed;inset:0;z-index:9000;
+  background:linear-gradient(150deg,var(--pr-dk) 0%,var(--pr) 50%,var(--pr-lt) 100%);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  padding:24px;overflow-y:auto
+}
+#screen-login.hidden{display:none}
+.login-card{
+  background:#fff;border-radius:24px;padding:28px 24px;width:100%;max-width:380px;
+  box-shadow:0 20px 60px rgba(0,0,0,.25)
+}
+.login-logo{
+  width:72px;height:72px;background:var(--pr-bg);border-radius:20px;
+  display:flex;align-items:center;justify-content:center;font-size:38px;
+  margin:0 auto 16px
+}
+.login-title{text-align:center;font-size:22px;font-weight:800;color:var(--t1);margin-bottom:4px}
+.login-sub{text-align:center;font-size:13px;color:var(--t2);margin-bottom:22px}
+.login-inp-wrap{position:relative;margin-bottom:14px}
+.login-inp-wrap i.prefix{position:absolute;left:12px;top:50%;transform:translateY(-50%);color:var(--t3);font-size:16px}
+.login-inp-wrap input{
+  width:100%;padding:12px 12px 12px 38px;
+  border:1.5px solid var(--bd);border-radius:12px;
+  font-size:14px;color:var(--t1);outline:none;transition:.2s
+}
+.login-inp-wrap input:focus{border-color:var(--pr);box-shadow:0 0 0 3px rgba(29,78,216,.1)}
+.login-inp-wrap .toggle-pw{
+  position:absolute;right:12px;top:50%;transform:translateY(-50%);
+  background:none;border:none;color:var(--t3);cursor:pointer;font-size:16px;padding:2px
+}
+.login-err{
+  background:#FEF2F2;border:1px solid #FECACA;border-radius:10px;
+  padding:10px 14px;font-size:12px;font-weight:600;color:#DC2626;
+  margin-bottom:14px;display:none;text-align:center
+}
+.login-btn{
+  width:100%;padding:14px;background:var(--pr);color:#fff;
+  border:none;border-radius:12px;font-size:15px;font-weight:800;
+  cursor:pointer;transition:.2s;display:flex;align-items:center;justify-content:center;gap:8px
+}
+.login-btn:active{filter:brightness(.9)}
+.login-btn:disabled{opacity:.6;cursor:not-allowed}
+.login-dev{text-align:center;font-size:10px;color:var(--t3);margin-top:16px;word-break:break-all}
+.login-spinner{width:18px;height:18px;border:2px solid rgba(255,255,255,.4);border-top-color:#fff;border-radius:50%;animation:spin .7s linear infinite;display:none}
+@keyframes spin{to{transform:rotate(360deg)}}
 </style>
 </head>
 <body>
@@ -201,6 +247,37 @@ textarea.form-control{resize:none}
   <div class="splash-icon">💊</div>
   <h1>PharmaBill</h1>
   <p>Professional Invoice Manager</p>
+</div>
+
+<!-- ═══ LOGIN SCREEN ══════════════════════════════════════════ -->
+<div id="screen-login" class="hidden">
+  <div class="login-card">
+    <div class="login-logo">💊</div>
+    <div class="login-title">PharmaBill</div>
+    <div class="login-sub">Sign in to continue</div>
+
+    <div class="login-err" id="login-err"></div>
+
+    <form onsubmit="doLogin(event)">
+      <div class="login-inp-wrap">
+        <i class="bi bi-person prefix"></i>
+        <input type="text" id="l-user" placeholder="Username" autocomplete="username" autocapitalize="none" required>
+      </div>
+      <div class="login-inp-wrap">
+        <i class="bi bi-lock prefix"></i>
+        <input type="password" id="l-pass" placeholder="Password" autocomplete="current-password" required>
+        <button type="button" class="toggle-pw" onclick="togglePw()" id="pw-eye">
+          <i class="bi bi-eye" id="pw-eye-i"></i>
+        </button>
+      </div>
+      <button class="login-btn" type="submit" id="login-btn">
+        <div class="login-spinner" id="login-spinner"></div>
+        <span id="login-btn-txt">Sign In</span>
+      </button>
+    </form>
+
+    <div class="login-dev">Device ID: <span id="login-devid"></span></div>
+  </div>
 </div>
 
 <!-- ═══ TOAST ════════════════════════════════════════════════ -->
@@ -524,6 +601,19 @@ textarea.form-control{resize:none}
           <button class="abtn abtn-sec" onclick="exportData()"><i class="bi bi-download"></i>Export JSON</button>
           <button class="abtn abtn-err" onclick="confirmClearAll()" style="padding:12px 14px"><i class="bi bi-trash3"></i></button>
         </div>
+      </div>
+    </div>
+
+    <!-- Session Info + Logout -->
+    <div class="card" style="margin-bottom:4px">
+      <div style="padding:14px 16px;display:flex;align-items:center;justify-content:space-between">
+        <div>
+          <div style="font-size:13px;font-weight:700;color:var(--t1)">Logged in as</div>
+          <div style="font-size:12px;color:var(--t2);margin-top:2px" id="s-username">—</div>
+        </div>
+        <button class="abtn abtn-err" style="padding:9px 16px;font-size:12px" onclick="doLogout()">
+          <i class="bi bi-box-arrow-right"></i>Logout
+        </button>
       </div>
     </div>
 
@@ -1114,6 +1204,7 @@ function confirmDel(id){
    SETTINGS
 ───────────────────────────────────────────── */
 function loadSettingsForm(){
+  const sess=getSession(); $('#s-username').text(sess?.username||'—');
   $('#s-cname').val(cfg.cname||'');
   $('#s-addr').val(cfg.addr||'');
   $('#s-phones').val(cfg.phones||'');
@@ -1239,6 +1330,111 @@ function numWords(n){
 }
 
 /* ─────────────────────────────────────────────
+   AUTH  (POST https://eposwala.com/api/login)
+───────────────────────────────────────────── */
+const AUTH_API = 'https://eposwala.com/api/login';
+const SK_SESSION = 'minipos.session';
+const SK_DEVICE  = 'minipos.deviceId';
+
+const ERR_MSGS = {
+  missing_fields:      'Enter your username and password.',
+  invalid_credentials: 'Wrong username or password.',
+  device_mismatch:     'This account is already active on another phone. Call 0302-8863131 for help.',
+  account_disabled:    'This account has been disabled. Call 0302-8863131 for help.'
+};
+
+function getDeviceId(){
+  let id = localStorage.getItem(SK_DEVICE);
+  if(!id){
+    try{ id = crypto.randomUUID(); }
+    catch(e){ id = Date.now().toString(36)+'-'+Math.random().toString(36).substr(2,12); }
+    localStorage.setItem(SK_DEVICE, id);
+  }
+  return id;
+}
+
+function getSession(){
+  try{
+    const s = JSON.parse(localStorage.getItem(SK_SESSION)||'null');
+    if(s && s.token && s.expiresAt > Date.now()) return s;
+  }catch(e){}
+  return null;
+}
+
+function showLogin(){
+  $('#screen-login').removeClass('hidden');
+  $('#bottom-nav').hide();
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  $('#login-devid').text(getDeviceId());
+  $('#l-user').val(''); $('#l-pass').val('');
+  setLoginErr(''); setLoginLoading(false);
+}
+
+function showApp(){
+  $('#screen-login').addClass('hidden');
+  $('#bottom-nav').show();
+  loadCfg(); loadInvs();
+  navigate('home');
+  // show username in settings
+  const s=getSession();
+  if(s) $('#s-username').text(s.username||'—');
+}
+
+function setLoginErr(msg){
+  if(msg){ $('#login-err').text(msg).show(); }
+  else    { $('#login-err').hide(); }
+}
+function setLoginLoading(on){
+  $('#login-btn').prop('disabled',on);
+  if(on){ $('#login-spinner').show(); $('#login-btn-txt').text('Signing in…'); }
+  else  { $('#login-spinner').hide(); $('#login-btn-txt').text('Sign In'); }
+}
+
+async function doLogin(e){
+  e.preventDefault();
+  const username = $('#l-user').val().trim();
+  const password = $('#l-pass').val();
+  if(!username||!password){ setLoginErr(ERR_MSGS.missing_fields); return; }
+  setLoginErr(''); setLoginLoading(true);
+  try{
+    const res = await fetch(AUTH_API,{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ username, password, deviceId: getDeviceId() })
+    });
+    const data = await res.json().catch(()=>({}));
+    if(res.ok){
+      localStorage.setItem(SK_SESSION, JSON.stringify({
+        token:     data.token,
+        expiresAt: data.expiresAt,
+        username:  data.username || username
+      }));
+      showApp();
+    } else {
+      setLoginErr(ERR_MSGS[data.error] || 'Login failed. Try again.');
+    }
+  } catch(err){
+    setLoginErr('Network error. Check your connection and try again.');
+  } finally {
+    setLoginLoading(false);
+  }
+}
+
+function doLogout(){
+  confirmAct('Logout','Sign out of PharmaBill?',()=>{
+    localStorage.removeItem(SK_SESSION);
+    showLogin();
+  },'Logout');
+}
+
+function togglePw(){
+  const inp=$('#l-pass')[0];
+  const show = inp.type==='password';
+  inp.type = show ? 'text' : 'password';
+  $('#pw-eye-i').toggleClass('bi-eye',!show).toggleClass('bi-eye-slash',show);
+}
+
+/* ─────────────────────────────────────────────
    PWA MANIFEST
 ───────────────────────────────────────────── */
 (function(){
@@ -1254,12 +1450,17 @@ function numWords(n){
    INIT
 ───────────────────────────────────────────── */
 $(document).ready(function(){
-  loadCfg(); loadInvs();
-  renderHome();
-  // Splash
+  // Splash → then auth gate
   setTimeout(()=>{
     $('#splash').css('opacity','0');
-    setTimeout(()=>$('#splash').hide(),500);
+    setTimeout(()=>{
+      $('#splash').hide();
+      if(getSession()){
+        showApp();
+      } else {
+        showLogin();
+      }
+    },500);
   },1400);
 });
 </script>
